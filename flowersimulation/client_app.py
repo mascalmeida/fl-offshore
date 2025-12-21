@@ -12,7 +12,9 @@ from flowersimulation.task import (
     get_model_params,
     load_data_ai4i,
     set_model_params,
+    binary_classification_metrics
 )
+
 
 # Flower ClientApp
 app = ClientApp()
@@ -22,39 +24,42 @@ app = ClientApp()
 def train(msg: Message, context: Context):
     """Train the model on local data."""
 
-    # Create LogisticRegression Model
+    # 1) Build model using current run_config
     penalty = context.run_config["penalty"]
-    # Create LogisticRegression Model
     model = create_log_reg_and_instantiate_parameters(penalty)
 
-    # Apply received pararameters
+    # 2) Apply global parameters received from the server
     ndarrays = msg.content["arrays"].to_numpy_ndarrays()
     set_model_params(model, ndarrays)
 
-    # Load the data
+    # 3) Load local partition
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
     X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions)
 
-    # Ignore convergence failure due to low local epochs
+    # 4) Fit locally
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        # Train the model on local data
         model.fit(X_train, y_train)
 
-    # Let's compute train loss
-    y_train_pred_proba = model.predict_proba(X_train)
-    train_logloss = log_loss(y_train, y_train_pred_proba, labels=UNIQUE_LABELS_AI4I)
-    accuracy = model.score(X_train, y_train)
+    # 5) Probabilities and thresholded predictions
+    y_proba = model.predict_proba(X_train)  # shape (n_samples, n_classes)
 
-    # Construct and return reply Message
+    # 6) Binary classification metrics
+    metrics = binary_classification_metrics(
+        y_true=y_train,
+        y_proba=y_proba,
+        classes=model.classes_,
+        prefix="train_",
+    )
+
+    # 6) Other metrics
+    #metrics["num-examples"] = len(X_train)
+
+    # 7) Return params and metrics
     ndarrays = get_model_params(model)
     model_record = ArrayRecord(ndarrays)
-    metrics = {
-        "num-examples": len(X_train),
-        "train_logloss": train_logloss,
-        "train_accuracy": accuracy,
-    }
+
     metric_record = MetricRecord(metrics)
     content = RecordDict({"arrays": model_record, "metrics": metric_record})
     return Message(content=content, reply_to=msg)
@@ -80,17 +85,17 @@ def evaluate(msg: Message, context: Context):
     _, _, X_test, y_test = load_data_ai4i(partition_id, num_partitions)
 
     # Evaluate the model on local data
-    y_test_pred_proba = model.predict_proba(X_test)
-    accuracy = model.score(X_test, y_test)
-    #loss = log_loss(y_test, y_test_pred_proba, labels=UNIQUE_LABELS)
-    loss = log_loss(y_test, y_test_pred_proba, labels=UNIQUE_LABELS_AI4I)
+    y_test_proba = model.predict_proba(X_test)
 
-    # Construct and return reply Message
-    metrics = {
-        "num-examples": len(X_test),
-        "test_logloss": loss,
-        "accuracy": accuracy,
-    }
+    metrics = binary_classification_metrics(
+        y_true=y_test,
+        y_proba=y_test_proba,
+        classes=model.classes_,
+        prefix="test_",
+    )
+
+    #metrics["num-examples"] = len(X_test)
+
     metric_record = MetricRecord(metrics)
     content = RecordDict({"metrics": metric_record})
     return Message(content=content, reply_to=msg)

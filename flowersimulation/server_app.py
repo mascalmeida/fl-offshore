@@ -1,4 +1,4 @@
-"""flowersimulation: A Flower / sklearn app."""
+"""flowersimulation: A Flower / sklearn app.""" 
 
 import joblib
 from flwr.app import ArrayRecord, Context
@@ -9,7 +9,8 @@ from pathlib import Path
 from flowersimulation.task import (
     create_log_reg_and_instantiate_parameters,
     get_model_params,
-    set_model_params
+    set_model_params,
+    global_evaluate
 )
 
 # Create ServerApp
@@ -23,7 +24,7 @@ def main(grid: Grid, context: Context) -> None:
     # Read run config
     num_rounds: int = context.run_config["num-server-rounds"]
 
-    # Create LogisticRegression Model. If AI4I data present, use its dims.
+    # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
     model = create_log_reg_and_instantiate_parameters(penalty)
     # Construct ArrayRecord representation
@@ -42,6 +43,7 @@ def main(grid: Grid, context: Context) -> None:
         grid=grid,
         initial_arrays=arrays,
         num_rounds=num_rounds,
+        evaluate_fn=global_evaluate,
     )
 
     # Save final model parameters
