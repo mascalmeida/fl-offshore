@@ -3,7 +3,7 @@
 import joblib
 from flwr.app import ArrayRecord, Context
 from flwr.serverapp import Grid, ServerApp
-from flwr.serverapp.strategy import FedAvg
+from flwr.serverapp.strategy import FedAvg, FedAdagrad
 
 from pathlib import Path
 from flowersimulation.task import (
@@ -29,8 +29,13 @@ def main(grid: Grid, context: Context) -> None:
     # Construct ArrayRecord representation
     arrays = ArrayRecord(get_model_params(model))
 
-    # Initialize FedAvg strategy
-    strategy = FedAvg(fraction_train=1.0, fraction_evaluate=1.0)
+    # Initialize strategy
+    fraction_train = 1.0
+    fraction_evaluate = 1.0
+    ## FedAvg
+    #strategy = FedAvg(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    # FedAdagrad
+    strategy = FedAdagrad(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
 
     # Start strategy, run FedAvg for `num_rounds`
     result = strategy.start(

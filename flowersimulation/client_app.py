@@ -34,7 +34,6 @@ def train(msg: Message, context: Context):
     # Load the data
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
-    #X_train, y_train, _, _ = load_data(partition_id, num_partitions)
     X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions)
 
     # Ignore convergence failure due to low local epochs
@@ -45,7 +44,6 @@ def train(msg: Message, context: Context):
 
     # Let's compute train loss
     y_train_pred_proba = model.predict_proba(X_train)
-    #train_logloss = log_loss(y_train, y_train_pred_proba, labels=UNIQUE_LABELS)
     train_logloss = log_loss(y_train, y_train_pred_proba, labels=UNIQUE_LABELS_AI4I)
     accuracy = model.score(X_train, y_train)
 
