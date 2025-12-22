@@ -31,7 +31,6 @@ from sklearn.metrics import (
 
 # save results
 from pathlib import Path
-GLOBAL_METRICS = []
 
 # This information is needed to create a correct scikit-learn model
 UNIQUE_LABELS_AI4I = [0, 1]
@@ -303,10 +302,5 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
         classes=model.classes_,
         prefix="global_",
     )
-
-    GLOBAL_METRICS.append({
-        "round": server_round,
-        **metrics,
-    })
 
     return MetricRecord(metrics)
