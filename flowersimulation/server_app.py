@@ -10,8 +10,13 @@ from flowersimulation.task import (
     create_log_reg_and_instantiate_parameters,
     get_model_params,
     set_model_params,
-    global_evaluate
+    global_evaluate,
+    GLOBAL_METRICS
 )
+
+# Save results
+import pandas as pd
+from pathlib import Path
 
 # Create ServerApp
 app = ServerApp()
@@ -51,3 +56,9 @@ def main(grid: Grid, context: Context) -> None:
     ndarrays = result.arrays.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
     joblib.dump(model, "logreg_model.pkl")
+
+    results_dir = Path("results")
+    results_dir.mkdir(exist_ok=True)
+
+    df = pd.DataFrame(GLOBAL_METRICS)
+    df.to_csv(results_dir / "global_metrics_per_round.csv", index=False)

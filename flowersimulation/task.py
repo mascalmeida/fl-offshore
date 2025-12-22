@@ -29,6 +29,10 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
+# save results
+from pathlib import Path
+GLOBAL_METRICS = []
+
 # This information is needed to create a correct scikit-learn model
 UNIQUE_LABELS_AI4I = [0, 1]
 FEATURES_AI4I = ["Air temperature [K]", "Process temperature [K]", "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"]
@@ -277,23 +281,20 @@ def binary_classification_metrics(
 
 # server side evaluation function
 def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
-    """Evaluate model on the server side."""
-
-    # Create LogisticRegression Model
-    penalty = "l2" #context.run_config["penalty"]
-    # Create LogisticRegression Model
+    penalty = "l2"
     model = create_log_reg_and_instantiate_parameters(penalty)
-    # Apply received pararameters
+
     ndarrays = arrays.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
 
-    # Load the data
-    # Here we load the entire dataset for evaluation
-    X_total, y_total = load_data_ai4i(partition_id=0, num_partitions=1, split=1)
-    # Train the model on whole data
-    model.fit(X_total, y_total)
+    # Load full evaluation data
+    X_total, y_total = load_data_ai4i(
+        partition_id=0,
+        num_partitions=1,
+        split=1.0
+    )
 
-    # Evaluate the model on local data
+    # ONLY evaluate
     y_total_proba = model.predict_proba(X_total)
 
     metrics = binary_classification_metrics(
@@ -303,7 +304,9 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
         prefix="global_",
     )
 
-    #metrics["num-examples"] = len(X_total)
+    GLOBAL_METRICS.append({
+        "round": server_round,
+        **metrics,
+    })
 
-    # Construct and return MetricRecord
     return MetricRecord(metrics)
