@@ -1,7 +1,8 @@
 ---
 tags: [tabular, fds]
 dataset: [ai4i2020]
-framework: [scikit-learn]
+framework: [flower]
+ml-model: [scikit-learn]
 ---
 
 # Federated Learning with scikit-learn and Flower
