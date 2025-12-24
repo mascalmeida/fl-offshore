@@ -5,6 +5,7 @@ import warnings
 from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 from sklearn.metrics import log_loss
+import numpy as np
 
 from flowersimulation.task import (
     UNIQUE_LABELS_AI4I,
@@ -33,14 +34,25 @@ def train(msg: Message, context: Context):
     set_model_params(model, ndarrays)
 
     # 3) Load local partition
+    dataset_name = context.run_config["dataset-name"]
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
-    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions)
+    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name)
 
     # 4) Fit locally
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    # --- START OF FIX ---
+    # 4) Train ONLY if we have at least 2 classes (0 and 1)
+    # If a client has only "Normal" data, it cannot learn what "Failure" looks like.
+    if len(np.unique(y_train)) < 2:
+        # Skip fit(). The model keeps the global parameters we set in step 2.
+        # We manually set classes_ so any subsequent metric calculation doesn't crash.
+        model.classes_ = np.array([0, 1]) 
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model.fit(X_train, y_train)
         model.fit(X_train, y_train)
+    # --- END OF FIX ---
 
     # 5) Probabilities and thresholded predictions
     y_proba = model.predict_proba(X_train)  # shape (n_samples, n_classes)

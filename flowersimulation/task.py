@@ -133,7 +133,7 @@ def create_log_reg_and_instantiate_parameters(
 
 fds_ai4i = None  # Cache FederatedDataset
 
-def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020.csv", split=0.8) -> pd.DataFrame:
+def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_imbalanced.csv", split=0.8) -> pd.DataFrame:
     """Load a local CSV, partition it using IidPartitioner and return the partition as a pandas DataFrame.
 
     Args:
@@ -171,10 +171,25 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020.c
 
         return X_scaled, y.values
     else:
+
+        # Check if we can stratify. If any class has < 2 samples, we cannot stratify.
+        stratify_param = y
+        
+        # Check count of least frequent class
+        if y.value_counts().min() < 2:
+            stratify_param = None
+
         # Split the on-edge data: 80% train, 20% test (stratified)
-        #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=(1-split), stratify=y, random_state=42)
-        X_train, X_test = X[: int(split * len(X))], X[int(split * len(X)) :] 
-        y_train, y_test = y[: int(split * len(y))], y[int(split * len(y)) :]
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, 
+            y, 
+            test_size=(1-split), 
+            stratify=stratify_param,  # Use the conditional parameter
+            random_state=42
+        )
+        
+        #X_train, X_test = X[: int(split * len(X))], X[int(split * len(X)) :] 
+        #y_train, y_test = y[: int(split * len(y))], y[int(split * len(y)) :]
         # Standardize features using training statistics
         X_train_scaled = scaler.fit_transform(X_train.values)
         X_test_scaled = scaler.transform(X_test.values)
@@ -279,7 +294,7 @@ def binary_classification_metrics(
     return metrics
 
 # server side evaluation function
-def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
+def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str) -> MetricRecord:
     penalty = "l2"
     model = create_log_reg_and_instantiate_parameters(penalty)
 
@@ -290,6 +305,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
     X_total, y_total = load_data_ai4i(
         partition_id=0,
         num_partitions=1,
+        data_path=dataset_name,
         split=1.0
     )
 

@@ -1,7 +1,7 @@
 """flowersimulation: A Flower / sklearn app.""" 
 
 import joblib
-from flwr.app import ArrayRecord, Context
+from flwr.app import ArrayRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
 from flwr.serverapp.strategy import FedAvg, FedAdagrad
 
@@ -27,6 +27,9 @@ def main(grid: Grid, context: Context) -> None:
 
     # Read run config
     num_rounds: int = context.run_config["num-server-rounds"]
+    fl_algo: float = context.run_config["fl-algorithm"]
+    fraction: float = context.run_config["fraction"]
+    dataset_name: str = context.run_config["dataset-name"]
 
     # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
@@ -35,19 +38,28 @@ def main(grid: Grid, context: Context) -> None:
     arrays = ArrayRecord(get_model_params(model))
 
     # Initialize strategy
-    fraction_train = 1.0
-    fraction_evaluate = 1.0
-    ## FedAvg
-    #strategy = FedAvg(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
-    # FedAdagrad
-    strategy = FedAdagrad(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    fraction_train = fraction
+    fraction_evaluate = fraction
+    if fl_algo == "FedAvg":
+        ## FedAvg
+        strategy = FedAvg(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    elif fl_algo == "FedAdagrad":
+        # FedAdagrad
+        strategy = FedAdagrad(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    else:
+        ## FedAvg
+        strategy = FedAvg(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+
+    # 2) Create a wrapper function to pass dataset_name to global_evaluate
+    def evaluate_fn(server_round: int, arrays: ArrayRecord) -> MetricRecord:
+        return global_evaluate(server_round, arrays, dataset_name)
 
     # Start strategy, run FedAvg for `num_rounds`
     result = strategy.start(
         grid=grid,
         initial_arrays=arrays,
         num_rounds=num_rounds,
-        evaluate_fn=global_evaluate
+        evaluate_fn=evaluate_fn
     )
 
     # Save final model parameters
