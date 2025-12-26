@@ -25,6 +25,14 @@ app = ClientApp()
 def train(msg: Message, context: Context):
     """Train the model on local data."""
 
+    failure_rate = context.run_config["failure-rate"]
+
+    # prob failure rate definition (failure_rate para True, 1 - failure_rate para False)
+    failure = np.random.choice([True, False], p=[failure_rate, 1-failure_rate])
+    if failure:
+        warnings.warn("Simulated failure on this client during training.")
+        raise RuntimeError("Simulated client failure during training.")
+
     # 1) Build model using current run_config
     penalty = context.run_config["penalty"]
     model = create_log_reg_and_instantiate_parameters(penalty)
@@ -37,7 +45,8 @@ def train(msg: Message, context: Context):
     dataset_name = context.run_config["dataset-name"]
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
-    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name)
+    iid = context.run_config["iid"]
+    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid)
 
     # 4) Fit locally
     # --- START OF FIX ---
@@ -91,10 +100,11 @@ def evaluate(msg: Message, context: Context):
     set_model_params(model, ndarrays)
 
     # Load the data
+    dataset_name = context.run_config["dataset-name"]
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
-    #_, _, X_test, y_test = load_data(partition_id, num_partitions)
-    _, _, X_test, y_test = load_data_ai4i(partition_id, num_partitions)
+    iid = context.run_config["iid"]
+    _, _, X_test, y_test = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid)
 
     # Evaluate the model on local data
     y_test_proba = model.predict_proba(X_test)

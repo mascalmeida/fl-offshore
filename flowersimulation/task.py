@@ -1,6 +1,7 @@
 import numpy as np
 from flwr.common import NDArrays
 from flwr_datasets.partitioner import IidPartitioner
+from flwr_datasets.partitioner import DirichletPartitioner
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
@@ -31,6 +32,11 @@ from sklearn.metrics import (
 
 # save results
 from pathlib import Path
+
+import logging
+
+# Cria o objeto de log com o nome do módulo atual
+log = logging.getLogger(__name__)
 
 # This information is needed to create a correct scikit-learn model
 UNIQUE_LABELS_AI4I = [0, 1]
@@ -133,7 +139,7 @@ def create_log_reg_and_instantiate_parameters(
 
 fds_ai4i = None  # Cache FederatedDataset
 
-def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_imbalanced.csv", split=0.8) -> pd.DataFrame:
+def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_balanced.csv", iid=1, split=0.8) -> pd.DataFrame:
     """Load a local CSV, partition it using IidPartitioner and return the partition as a pandas DataFrame.
 
     Args:
@@ -155,7 +161,19 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_i
             else:
                 df = next(iter(df.values()))
 
-        fds_ai4i = IidPartitioner(num_partitions=num_partitions)
+        if iid == 1:
+            fds_ai4i = IidPartitioner(num_partitions=num_partitions)
+        else:
+            # alpha=1 cria uma heterogeneidade moderada/alta (realista para frotas diferentes)
+            min_partition_size = int(0.2 * (len(df)/num_partitions))  # Ensure at least 20% of data per partition is in each partition
+            fds_ai4i = DirichletPartitioner(
+                num_partitions=num_partitions,
+                partition_by="Machine failure",
+                alpha=1,
+                min_partition_size=min_partition_size,
+                seed=42
+            )
+
         fds_ai4i.dataset = df
 
     dataset = fds_ai4i.load_partition(partition_id=partition_id).with_format("pandas")[:]
@@ -306,6 +324,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str) -
         partition_id=0,
         num_partitions=1,
         data_path=dataset_name,
+        iid=1,
         split=1.0
     )
 

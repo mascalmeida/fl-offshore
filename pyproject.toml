@@ -25,11 +25,13 @@ clientapp = "flowersimulation.client_app:app"
 
 [tool.flwr.app.config]
 penalty = "l2"
-num-server-rounds = 5
+num-server-rounds = 100
 min-available-clients = 2
-dataset-name = "ai4i2020_balanced.csv"
-fl-algorithm = "FedAdagrad"
-fraction = 0.8
+fl-algorithm = "FedAvg"
+dataset-name = "ai4i2020_imbalanced.csv"
+fraction = 1
+failure-rate = 0.3
+iid = 0
 
 [tool.flwr.federations]
 default = "local-simulation"

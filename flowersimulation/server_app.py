@@ -30,7 +30,7 @@ def main(grid: Grid, context: Context) -> None:
     fl_algo: float = context.run_config["fl-algorithm"]
     fraction: float = context.run_config["fraction"]
     dataset_name: str = context.run_config["dataset-name"]
-
+    
     # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
     model = create_log_reg_and_instantiate_parameters(penalty)
