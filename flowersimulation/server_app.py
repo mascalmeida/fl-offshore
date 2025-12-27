@@ -92,10 +92,14 @@ def main(grid: Grid, context: Context) -> None:
     )
 
     # Save final model parameters
+
+    models_dir = Path("models")
+    models_dir.mkdir(exist_ok=True)
+
     print("\nSaving final model to disk...")
     ndarrays = result.arrays.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
-    joblib.dump(model, "logreg_model.pkl")
+    joblib.dump(model, models_dir /f"logreg_model_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}_{seed}.pkl")
 
     results_dir = Path("results")
     results_dir.mkdir(exist_ok=True)
