@@ -3,7 +3,7 @@
 import joblib
 from flwr.app import ArrayRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
-from flwr.serverapp.strategy import FedAvg, FedAdagrad
+from flwr.serverapp.strategy import FedAvg, FedAdagrad, FedAdam, FedYogi
 
 from pathlib import Path
 from flowersimulation.task import (
@@ -38,7 +38,6 @@ def main(grid: Grid, context: Context) -> None:
     fraction: float = context.run_config["fraction"]
     failure_rate: float = context.run_config["failure-rate"]
     iid: str = context.run_config["iid"]
-
     
     # Build once per run
     balance_type = dataset_name.split("_")[1].replace(".csv", "")
@@ -51,7 +50,6 @@ def main(grid: Grid, context: Context) -> None:
         "seed": seed
     }
 
-
     print(f"FL Algorithm: {fl_algo}, Dataset: {dataset_name}, Fraction: {fraction}, "
           f"Failure Rate: {failure_rate}, IID: {iid}, Seed: {seed}")
     
@@ -59,8 +57,11 @@ def main(grid: Grid, context: Context) -> None:
     penalty = context.run_config["penalty"]
     local_epochs = context.run_config["local-epochs"]
     model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=seed)
+    initial_parameters = get_model_params(model) # Transforma em Parameters do Flower
     # Construct ArrayRecord representation
-    arrays = ArrayRecord(get_model_params(model))
+    arrays = ArrayRecord(initial_parameters)
+
+    
 
     # Initialize strategy
     fraction_train = fraction
@@ -71,9 +72,14 @@ def main(grid: Grid, context: Context) -> None:
     elif fl_algo == "FedAdagrad":
         # FedAdagrad
         strategy = FedAdagrad(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    elif fl_algo == "FedAdam":
+        # FedAdam
+        strategy = FedAdam(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+    elif fl_algo == "FedYogi":
+        # FedYogi
+        strategy = FedYogi(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
     else:
-        ## FedAvg
-        strategy = FedAvg(fraction_train=fraction_train, fraction_evaluate=fraction_evaluate)
+        raise ValueError(f"Algorithm {fl_algo} not supported.")
 
     # 2) Create a wrapper function to pass dataset_name to global_evaluate
     def evaluate_fn(server_round: int, arrays: ArrayRecord) -> MetricRecord:

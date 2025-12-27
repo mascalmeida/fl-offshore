@@ -8,11 +8,11 @@ import sys
 # ==========================================
 # Defina aqui seus 5 fatores e os 2 níveis de cada um
 doe_factors = {
-    "fl-algorithm": ["FedAvg", "FedAdagrad"], # Fator 1: Algoritmo de FL
-    "dataset-name": ["ai4i2020_balanced.csv", "ai4i2020_imbalanced.csv"], # Fator 2: Balanceamento
-    "fraction": [0.39, 1],             # Fator 3: Participação dos clientes
-    "failure-rate": [0, 0.3],         # Fator 4: Robustez (0% ou 30% falha)
-    "iid": [1, 0],                      # Fator 5: Heterogeneidade
+    "fl-algorithm": ["FedAvg", "FedAdagrad", "FedAdam", "FedYogi"], # Fator 1: Algoritmo de FL
+    #"dataset-name": ["ai4i2020_balanced.csv", "ai4i2020_imbalanced.csv"], # Fator 2: Balanceamento
+    #"fraction": [0.39, 1],             # Fator 3: Participação dos clientes
+    #"failure-rate": [0, 0.3],         # Fator 4: Robustez (0% ou 30% falha)
+    #"iid": [1, 0],                      # Fator 5: Heterogeneidade
 }
 
 # Configurações fixas que não variam no DOE (opcional)
@@ -25,7 +25,7 @@ fixed_config = {
 # Lista de Seeds para replicar o experimento (ex: 3 execuções por combinação)
 # Se quiser apenas uma rodada determinística, deixe apenas [42]
 #seeds = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
-seeds = [428956419, 1954324947]
+seeds = [1954324947]
 
 # ==========================================
 # 2. Gerar Combinações
