@@ -27,9 +27,27 @@ def main(grid: Grid, context: Context) -> None:
 
     # Read run config
     num_rounds: int = context.run_config["num-server-rounds"]
+    ## Factors
     fl_algo: float = context.run_config["fl-algorithm"]
-    fraction: float = context.run_config["fraction"]
     dataset_name: str = context.run_config["dataset-name"]
+    fraction: float = context.run_config["fraction"]
+    failure_rate: float = context.run_config["failure-rate"]
+    iid: str = context.run_config["iid"]
+
+    
+    # Build once per run
+    balance_type = dataset_name.split("_")[1].replace(".csv", "")
+    factors = {
+        "fl_algo": fl_algo,
+        "dataset_balance_type": balance_type,
+        "fraction": fraction,
+        "failure_rate": failure_rate,
+        "iid": iid,
+    }
+
+
+    print(f"FL Algorithm: {fl_algo}, Dataset: {dataset_name}, Fraction: {fraction}, "
+          f"Failure Rate: {failure_rate}, IID: {iid}")
     
     # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
@@ -71,25 +89,29 @@ def main(grid: Grid, context: Context) -> None:
     results_dir = Path("results")
     results_dir.mkdir(exist_ok=True)
 
-    # global
+    # -------------------------
+    # GLOBAL (server-side eval)
+    # -------------------------
     global_metrics = result.evaluate_metrics_serverapp
-
     rows = []
 
     if not global_metrics:
-        print("WARNING: No client-side training metrics were collected.")
+        print("WARNING: No server-side evaluation metrics were collected.")
     else:
         for rnd, metric_record in global_metrics.items():
+            # base columns
             row = {"round": rnd}
-            row.update(dict(metric_record))  # explicit & safe
+            row.update(dict(metric_record))    # metrics
+            row.update(factors)                # add factors
             rows.append(row)
 
     df_global = pd.DataFrame(rows)
-    df_global.to_csv(results_dir / "global_metrics.csv", index=False)
+    df_global.to_csv(results_dir / f"global_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
 
-    # train
+    # -------------------------
+    # TRAIN (client-side train)
+    # -------------------------
     train_metrics = result.train_metrics_clientapp
-
     rows = []
 
     if not train_metrics:
@@ -97,15 +119,17 @@ def main(grid: Grid, context: Context) -> None:
     else:
         for rnd, metric_record in train_metrics.items():
             row = {"round": rnd}
-            row.update(dict(metric_record))  # explicit & safe
+            row.update(dict(metric_record))
+            row.update(factors)
             rows.append(row)
 
     df_train = pd.DataFrame(rows)
-    df_train.to_csv(results_dir / "train_metrics.csv", index=False)
+    df_train.to_csv(results_dir / f"train_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
 
-    # evaluate
+    # -------------------------
+    # EVALUATE (client-side eval)
+    # -------------------------
     evaluate_metrics = result.evaluate_metrics_clientapp
-
     rows = []
 
     if not evaluate_metrics:
@@ -113,8 +137,9 @@ def main(grid: Grid, context: Context) -> None:
     else:
         for rnd, metric_record in evaluate_metrics.items():
             row = {"round": rnd}
-            row.update(dict(metric_record))  # explicit & safe
+            row.update(dict(metric_record))
+            row.update(factors)
             rows.append(row)
 
     df_eval = pd.DataFrame(rows)
-    df_eval.to_csv(results_dir / "eval_metrics.csv", index=False)
+    df_eval.to_csv(results_dir / f"eval_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
