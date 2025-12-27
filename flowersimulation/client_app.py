@@ -13,7 +13,8 @@ from flowersimulation.task import (
     get_model_params,
     load_data_ai4i,
     set_model_params,
-    binary_classification_metrics
+    binary_classification_metrics,
+    set_all_seeds
 )
 
 
@@ -25,6 +26,13 @@ app = ClientApp()
 def train(msg: Message, context: Context):
     """Train the model on local data."""
 
+    run_seed = context.run_config["seed"]
+    partition_id = context.node_config["partition-id"]
+    local_seed = run_seed + partition_id 
+    
+    # 2. Aplicar a seed antes de qualquer operação aleatória
+    set_all_seeds(local_seed)
+
     failure_rate = context.run_config["failure-rate"]
 
     # prob failure rate definition (failure_rate para True, 1 - failure_rate para False)
@@ -35,7 +43,7 @@ def train(msg: Message, context: Context):
 
     # 1) Build model using current run_config
     penalty = context.run_config["penalty"]
-    model = create_log_reg_and_instantiate_parameters(penalty)
+    model = create_log_reg_and_instantiate_parameters(penalty, seed=local_seed)
 
     # 2) Apply global parameters received from the server
     ndarrays = msg.content["arrays"].to_numpy_ndarrays()
@@ -43,10 +51,9 @@ def train(msg: Message, context: Context):
 
     # 3) Load local partition
     dataset_name = context.run_config["dataset-name"]
-    partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
     iid = context.run_config["iid"]
-    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid)
+    X_train, y_train, _, _ = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid, seed=local_seed)
 
     # 4) Fit locally
     # --- START OF FIX ---
@@ -90,10 +97,17 @@ def train(msg: Message, context: Context):
 def evaluate(msg: Message, context: Context):
     """Evaluate the model on local data."""
 
+    run_seed = context.run_config["seed"]
+    partition_id = context.node_config["partition-id"]
+    local_seed = run_seed + partition_id 
+    
+    # 2. Aplicar a seed antes de qualquer operação aleatória
+    set_all_seeds(local_seed)
+
     # Create LogisticRegression Model
     penalty = context.run_config["penalty"]
     # Create LogisticRegression Model
-    model = create_log_reg_and_instantiate_parameters(penalty)
+    model = create_log_reg_and_instantiate_parameters(penalty, seed=local_seed)
 
     # Apply received pararameters
     ndarrays = msg.content["arrays"].to_numpy_ndarrays()
@@ -101,10 +115,9 @@ def evaluate(msg: Message, context: Context):
 
     # Load the data
     dataset_name = context.run_config["dataset-name"]
-    partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
     iid = context.run_config["iid"]
-    _, _, X_test, y_test = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid)
+    _, _, X_test, y_test = load_data_ai4i(partition_id, num_partitions, data_path=dataset_name, iid=iid, seed=local_seed)
 
     # Evaluate the model on local data
     y_test_proba = model.predict_proba(X_test)

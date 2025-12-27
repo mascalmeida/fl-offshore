@@ -10,7 +10,8 @@ from flowersimulation.task import (
     create_log_reg_and_instantiate_parameters,
     get_model_params,
     set_model_params,
-    global_evaluate
+    global_evaluate,
+    set_all_seeds
 )
 
 # Save results
@@ -24,6 +25,10 @@ app = ServerApp()
 @app.main()
 def main(grid: Grid, context: Context) -> None:
     """Main entry point for the ServerApp."""
+
+    # 1. Definir seed global no início
+    seed = context.run_config["seed"]
+    set_all_seeds(seed)
 
     # Read run config
     num_rounds: int = context.run_config["num-server-rounds"]
@@ -43,15 +48,16 @@ def main(grid: Grid, context: Context) -> None:
         "fraction": fraction,
         "failure_rate": failure_rate,
         "iid": iid,
+        "seed": seed
     }
 
 
     print(f"FL Algorithm: {fl_algo}, Dataset: {dataset_name}, Fraction: {fraction}, "
-          f"Failure Rate: {failure_rate}, IID: {iid}")
+          f"Failure Rate: {failure_rate}, IID: {iid}, Seed: {seed}")
     
     # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
-    model = create_log_reg_and_instantiate_parameters(penalty)
+    model = create_log_reg_and_instantiate_parameters(penalty, seed=seed)
     # Construct ArrayRecord representation
     arrays = ArrayRecord(get_model_params(model))
 
@@ -70,7 +76,7 @@ def main(grid: Grid, context: Context) -> None:
 
     # 2) Create a wrapper function to pass dataset_name to global_evaluate
     def evaluate_fn(server_round: int, arrays: ArrayRecord) -> MetricRecord:
-        return global_evaluate(server_round, arrays, dataset_name)
+        return global_evaluate(server_round, arrays, dataset_name, seed=seed)
 
     # Start strategy, run FedAvg for `num_rounds`
     result = strategy.start(
@@ -106,7 +112,7 @@ def main(grid: Grid, context: Context) -> None:
             rows.append(row)
 
     df_global = pd.DataFrame(rows)
-    df_global.to_csv(results_dir / f"global_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
+    df_global.to_csv(results_dir / f"global_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}_{seed}.csv", index=False)
 
     # -------------------------
     # TRAIN (client-side train)
@@ -124,7 +130,7 @@ def main(grid: Grid, context: Context) -> None:
             rows.append(row)
 
     df_train = pd.DataFrame(rows)
-    df_train.to_csv(results_dir / f"train_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
+    df_train.to_csv(results_dir / f"train_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}_{seed}.csv", index=False)
 
     # -------------------------
     # EVALUATE (client-side eval)
@@ -142,4 +148,4 @@ def main(grid: Grid, context: Context) -> None:
             rows.append(row)
 
     df_eval = pd.DataFrame(rows)
-    df_eval.to_csv(results_dir / f"eval_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}.csv", index=False)
+    df_eval.to_csv(results_dir / f"eval_metrics_{fl_algo}_{balance_type}_{int(fraction*100)}_{int(failure_rate*100)}_{iid}_{seed}.csv", index=False)

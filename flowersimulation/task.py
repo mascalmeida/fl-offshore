@@ -33,14 +33,20 @@ from sklearn.metrics import (
 # save results
 from pathlib import Path
 
-import logging
-
-# Cria o objeto de log com o nome do módulo atual
-log = logging.getLogger(__name__)
+import random
+import os
 
 # This information is needed to create a correct scikit-learn model
 UNIQUE_LABELS_AI4I = [0, 1]
 FEATURES_AI4I = ["Air temperature [K]", "Process temperature [K]", "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"]
+
+#seed_list = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
+
+def set_all_seeds(seed: int):
+    """Define seeds para reprodutibilidade."""
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
 
 
 def get_model_params(model: LogisticRegression) -> NDArrays:
@@ -96,13 +102,14 @@ def set_initial_params(model: LogisticRegression, n_classes: int, n_features: in
 
 
 def create_log_reg_and_instantiate_parameters(
-    penalty,
+    penalty="l2",
     n_features: int = None,
     n_classes: int = None,
     max_iter_per_round: int = 1,
     tol: float = 1e-3,
     C: float = 1.0,
     suppress_convergence_warning: bool = True,
+    seed: int = 42,
 ):
     """
     Create a LogisticRegression and set initial parameters
@@ -124,6 +131,7 @@ def create_log_reg_and_instantiate_parameters(
         tol=tol,
         warm_start=True,
         solver="saga",
+        random_state=seed,
     )
 
     if n_features is None:
@@ -139,7 +147,7 @@ def create_log_reg_and_instantiate_parameters(
 
 fds_ai4i = None  # Cache FederatedDataset
 
-def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_balanced.csv", iid=1, split=0.8) -> pd.DataFrame:
+def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_balanced.csv", iid=1, seed = 42, split=0.8) -> pd.DataFrame:
     """Load a local CSV, partition it using IidPartitioner and return the partition as a pandas DataFrame.
 
     Args:
@@ -171,7 +179,7 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_b
                 partition_by="Machine failure",
                 alpha=1,
                 min_partition_size=min_partition_size,
-                seed=42
+                seed=seed,
             )
 
         fds_ai4i.dataset = df
@@ -203,7 +211,7 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_b
             y, 
             test_size=(1-split), 
             stratify=stratify_param,  # Use the conditional parameter
-            random_state=42
+            random_state=seed
         )
         
         #X_train, X_test = X[: int(split * len(X))], X[int(split * len(X)) :] 
@@ -312,9 +320,9 @@ def binary_classification_metrics(
     return metrics
 
 # server side evaluation function
-def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str) -> MetricRecord:
+def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str, seed=42) -> MetricRecord:
     penalty = "l2"
-    model = create_log_reg_and_instantiate_parameters(penalty)
+    model = create_log_reg_and_instantiate_parameters(penalty, seed=seed)
 
     ndarrays = arrays.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
@@ -325,6 +333,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str) -
         num_partitions=1,
         data_path=dataset_name,
         iid=1,
+        seed=seed,
         split=1.0
     )
 

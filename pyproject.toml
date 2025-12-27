@@ -32,6 +32,7 @@ dataset-name = "ai4i2020_imbalanced.csv"
 fraction = 0.39
 failure-rate = 0
 iid = 1
+seed = 428956419
 
 [tool.flwr.federations]
 default = "local-simulation"
