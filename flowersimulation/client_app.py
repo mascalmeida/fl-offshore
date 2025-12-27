@@ -14,7 +14,8 @@ from flowersimulation.task import (
     load_data_ai4i,
     set_model_params,
     binary_classification_metrics,
-    set_all_seeds
+    set_all_seeds,
+    get_payload_size_bytes
 )
 
 
@@ -47,7 +48,10 @@ def train(msg: Message, context: Context):
     model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=local_seed)
 
     # 2) Apply global parameters received from the server
-    ndarrays = msg.content["arrays"].to_numpy_ndarrays()
+    incoming_arrays_record = msg.content["arrays"]
+    download_bytes = get_payload_size_bytes(incoming_arrays_record)
+
+    ndarrays = incoming_arrays_record.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
 
     # 3) Load local partition
@@ -83,7 +87,15 @@ def train(msg: Message, context: Context):
     )
 
     # 6) Other metrics
-    #metrics["num-examples"] = len(X_train)
+    # Pegamos os parametros finais que serão enviados
+    final_ndarrays = get_model_params(model)
+    # Calculamos o upload (tamanho do modelo treinado)
+    upload_bytes = 0
+    for arr in final_ndarrays:
+        upload_bytes += arr.nbytes
+
+    metrics["comm_download_bytes"] = download_bytes
+    metrics["comm_upload_bytes"] = upload_bytes
 
     # 7) Return params and metrics
     ndarrays = get_model_params(model)
@@ -111,7 +123,9 @@ def evaluate(msg: Message, context: Context):
     model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=local_seed)
 
     # Apply received pararameters
-    ndarrays = msg.content["arrays"].to_numpy_ndarrays()
+    incoming_arrays_record = msg.content["arrays"]
+    download_bytes = get_payload_size_bytes(incoming_arrays_record)
+    ndarrays = incoming_arrays_record.to_numpy_ndarrays()
     set_model_params(model, ndarrays)
 
     # Load the data
@@ -130,7 +144,7 @@ def evaluate(msg: Message, context: Context):
         prefix="test_",
     )
 
-    #metrics["num-examples"] = len(X_test)
+    metrics["comm_download_bytes"] = download_bytes
 
     metric_record = MetricRecord(metrics)
     content = RecordDict({"metrics": metric_record})

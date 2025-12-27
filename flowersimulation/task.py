@@ -48,6 +48,15 @@ def set_all_seeds(seed: int):
     random.seed(seed)
     np.random.seed(seed)
 
+# Função auxiliar para calcular tamanho do payload em bytes
+def get_payload_size_bytes(arrays_record) -> int:
+    """Calcula o tamanho total em bytes dos arrays numpy."""
+    total_bytes = 0
+    # Converte para lista de numpy arrays para somar nbytes
+    for arr in arrays_record.to_numpy_ndarrays():
+        total_bytes += arr.nbytes
+    return total_bytes
+
 
 def get_model_params(model: LogisticRegression) -> NDArrays:
     """Return the parameters of a sklearn LogisticRegression model."""
