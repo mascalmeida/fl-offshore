@@ -5,7 +5,7 @@ from flwr_datasets.partitioner import DirichletPartitioner
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 import pandas as pd
 
 # server side evaluation packages
@@ -131,6 +131,7 @@ def create_log_reg_and_instantiate_parameters(
         tol=tol,
         warm_start=True,
         solver="saga",
+        class_weight="balanced",
         random_state=seed,
     )
 
@@ -161,7 +162,17 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_b
     global fds_ai4i
     if fds_ai4i is None:
         # Simple loading: use the provided data_path as-is.
-        df = load_dataset("csv", data_files=str(data_path))
+
+        # 1. Carregar com PANDAS (para poder usar o .sample e embaralhar)
+        dt = pd.read_csv(data_path)
+
+        # 2. Embaralhamento Global (O Pulo do Gato para corrigir o erro de Single Label)
+        # Mistura 0s e 1s antes de qualquer divisão
+        dt = dt.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+        # 3. Converter para formato Hugging Face (que o Partitioner exige)
+        df = Dataset.from_pandas(dt)
+
         # load_dataset often returns a DatasetDict; pick the 'train' split if present
         if hasattr(df, "keys"):
             if "train" in df:
