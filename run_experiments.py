@@ -4,7 +4,7 @@ import time
 import sys
 
 # ==========================================
-# 1. Definition of Factors and Levels (2^5)
+# 1. Definition of Factors and Levels (2*2^5)
 # ==========================================
 # Define your 5 factors and their 2 levels here
 doe_factors = {
