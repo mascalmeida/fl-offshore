@@ -30,12 +30,12 @@ def train(msg: Message, context: Context):
     partition_id = context.node_config["partition-id"]
     local_seed = run_seed + partition_id 
     
-    # 2. Aplicar a seed antes de qualquer operação aleatória
+    # 2. Apply seed before any random operation
     set_all_seeds(local_seed)
 
     failure_rate = context.run_config["failure-rate"]
 
-    # prob failure rate definition (failure_rate para True, 1 - failure_rate para False)
+    # Probabilistic failure rate definition (failure_rate for True, 1 - failure_rate for False)
     failure = np.random.choice([True, False], p=[failure_rate, 1-failure_rate])
     if failure:
         warnings.warn("Simulated failure on this client during training.")
@@ -102,7 +102,7 @@ def evaluate(msg: Message, context: Context):
     partition_id = context.node_config["partition-id"]
     local_seed = run_seed + partition_id 
     
-    # 2. Aplicar a seed antes de qualquer operação aleatória
+    # 2. Apply seed before any random operation
     set_all_seeds(local_seed)
 
     # Create LogisticRegression Model

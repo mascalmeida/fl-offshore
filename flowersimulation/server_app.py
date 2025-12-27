@@ -26,7 +26,7 @@ app = ServerApp()
 def main(grid: Grid, context: Context) -> None:
     """Main entry point for the ServerApp."""
 
-    # 1. Definir seed global no início
+    # 1. Set global seed at the start
     seed = context.run_config["seed"]
     set_all_seeds(seed)
 
@@ -57,11 +57,9 @@ def main(grid: Grid, context: Context) -> None:
     penalty = context.run_config["penalty"]
     local_epochs = context.run_config["local-epochs"]
     model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=seed)
-    initial_parameters = get_model_params(model) # Transforma em Parameters do Flower
+    initial_parameters = get_model_params(model)
     # Construct ArrayRecord representation
     arrays = ArrayRecord(initial_parameters)
-
-    
 
     # Initialize strategy
     fraction_train = fraction

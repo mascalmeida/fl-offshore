@@ -4,49 +4,49 @@ import time
 import sys
 
 # ==========================================
-# 1. Definição dos Fatores e Níveis (2^5)
+# 1. Definition of Factors and Levels (2^5)
 # ==========================================
-# Defina aqui seus 5 fatores e os 2 níveis de cada um
+# Define your 5 factors and their 2 levels here
 doe_factors = {
-    "fl-algorithm": ["FedAvg", "FedAdagrad", "FedAdam", "FedYogi"], # Fator 1: Algoritmo de FL
-    #"dataset-name": ["ai4i2020_balanced.csv", "ai4i2020_imbalanced.csv"], # Fator 2: Balanceamento
-    #"fraction": [0.39, 1],             # Fator 3: Participação dos clientes
-    #"failure-rate": [0, 0.3],         # Fator 4: Robustez (0% ou 30% falha)
-    #"iid": [1, 0],                      # Fator 5: Heterogeneidade
+    "fl-algorithm": ["FedAvg", "FedAdagrad", "FedAdam", "FedYogi"], # Factor 1: FL Algorithm
+    "dataset-name": ["ai4i2020_balanced.csv", "ai4i2020_imbalanced.csv"], # Factor 2: Balancing
+    "fraction": [0.39, 1],             # Factor 3: Client participation
+    "failure-rate": [0, 0.3],          # Factor 4: Robustness (0% or 30% failure)
+    "iid": [1, 0],                     # Factor 5: Heterogeneity
 }
 
-# Configurações fixas que não variam no DOE (opcional)
+# Fixed configurations that do not vary in the DOE (optional)
 fixed_config = {
-    "num-server-rounds": 3,  # Exemplo: fixar em 10 rounds para todos
-    "local-epochs": 1,    # Exemplo: fixar em 1 e 5 épocas locais
+    "num-server-rounds": 3,  # Example: fix at 10 rounds for all
+    "local-epochs": 1,    # Example: fix at 1 and 5 local epochs
     "penalty": "l2"
 }
 
-# Lista de Seeds para replicar o experimento (ex: 3 execuções por combinação)
-# Se quiser apenas uma rodada determinística, deixe apenas [42]
+# List of Seeds to replicate the experiment (e.g., 3 runs per combination)
+# If you want only one deterministic run, leave only [42]
 #seeds = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
 seeds = [1954324947]
 
 # ==========================================
-# 2. Gerar Combinações
+# 2. Generate Combinations
 # ==========================================
 keys, values = zip(*doe_factors.items())
 combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 total_runs = len(combinations) * len(seeds)
-print(f"Total de combinações (2^5): {len(combinations)}")
-print(f"Total de execuções (incluindo seeds): {total_runs}")
+print(f"Total combinations (2^5): {len(combinations)}")
+print(f"Total runs (including seeds): {total_runs}")
 
 # ==========================================
-# 3. Loop de Execução
+# 3. Execution Loop
 # ==========================================
-# Função auxiliar para formatar valores
+# Helper function to format values
 def format_arg(key, value):
     if isinstance(value, str):
-        # Se for string, coloca aspas duplas em volta do valor
+        # If it is a string, put double quotes around the value
         return f'{key}="{value}"'
     else:
-        # Se for número ou booleano, deixa sem aspas
+        # If it is a number or boolean, leave without quotes
         return f"{key}={value}"
 
 current_run = 1
@@ -54,50 +54,50 @@ current_run = 1
 for seed in seeds:
     for config in combinations:
         print(f"\n=============================================")
-        print(f"Executando {current_run}/{total_runs} | Seed: {seed}")
+        print(f"Running {current_run}/{total_runs} | Seed: {seed}")
         print(f"Config: {config}")
         print(f"=============================================")
 
-        # Monta a string de argumentos para o --run-config
-        # Formato: chave=valor chave2=valor2
+        # Assembles the argument string for --run-config
+        # Format: key=value key2=value2
         config_args = []
         
-        # Adiciona fatores do DOE
+        # Adds DOE factors
         for k, v in config.items():
             config_args.append(format_arg(k, v))
         
-        # Adiciona configs fixas
+        # Adds fixed configs
         for k, v in fixed_config.items():
             config_args.append(format_arg(k, v))
 
-        # Adiciona a seed atual
+        # Adds the current seed
         config_args.append(f"seed={seed}")
 
-        # Junta tudo em uma string
+        # Joins everything into a string
         run_config_str = " ".join(config_args)
 
-        # Comando final: flwr run . --run-config "..."
-        # Nota: O dataset-name e outros valores string devem ser tratados com cuidado no shell,
-        # mas o Flower geralmente lida bem com strings simples.
+        # Final command: flwr run . --run-config "..."
+        # Note: dataset-name and other string values must be handled carefully in the shell,
+        # but Flower usually handles simple strings well.
         cmd = [
             "flwr", "run", ".", 
             "--run-config", run_config_str
         ]
 
         try:
-            # Executa o comando e espera terminar
+            # Executes the command and waits for it to finish
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
-            print(f"Erro na execução da run {current_run}: {e}")
-            # Decida se quer 'break' ou 'continue'
+            print(f"Error executing run {current_run}: {e}")
+            # Decide if you want 'break' or 'continue'
             # continue 
         except KeyboardInterrupt:
-            print("Execução interrompida pelo usuário.")
+            print("Execution interrupted by user.")
             sys.exit()
 
         current_run += 1
         
-        # Opcional: Pausa curta para limpar recursos do SO se necessário
+        # Optional: Short pause to clear OS resources if necessary
         time.sleep(2)
 
-print("\nPlanejamento de Experimentos concluído com sucesso!")
+print("\nDesign of Experiments successfully completed!")

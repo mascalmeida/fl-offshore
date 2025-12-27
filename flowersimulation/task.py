@@ -43,7 +43,7 @@ FEATURES_AI4I = ["Air temperature [K]", "Process temperature [K]", "Rotational s
 #seed_list = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
 
 def set_all_seeds(seed: int):
-    """Define seeds para reprodutibilidade."""
+    """Set seeds for reproducibility."""
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
@@ -163,14 +163,14 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_b
     if fds_ai4i is None:
         # Simple loading: use the provided data_path as-is.
 
-        # 1. Carregar com PANDAS (para poder usar o .sample e embaralhar)
+        # 1. Load with PANDAS (to allow .sample and shuffling)
         dt = pd.read_csv(data_path)
 
-        # 2. Embaralhamento Global (O Pulo do Gato para corrigir o erro de Single Label)
-        # Mistura 0s e 1s antes de qualquer divisão
+        # 2. Global Shuffle (Key step to fix the Single Label error)
+        # Mixes 0s and 1s before any splitting
         dt = dt.sample(frac=1, random_state=seed).reset_index(drop=True)
 
-        # 3. Converter para formato Hugging Face (que o Partitioner exige)
+        # 3. Convert to Hugging Face format (required by Partitioner)
         df = Dataset.from_pandas(dt)
 
         # load_dataset often returns a DatasetDict; pick the 'train' split if present
@@ -183,7 +183,7 @@ def load_data_ai4i(partition_id: int, num_partitions: int, data_path="ai4i2020_b
         if iid == 1:
             fds_ai4i = IidPartitioner(num_partitions=num_partitions)
         else:
-            # alpha=1 cria uma heterogeneidade moderada/alta (realista para frotas diferentes)
+            # alpha=1 creates moderate/high heterogeneity (realistic for different fleets)
             min_partition_size = int(0.2 * (len(df)/num_partitions))  # Ensure at least 20% of data per partition is in each partition
             fds_ai4i = DirichletPartitioner(
                 num_partitions=num_partitions,
