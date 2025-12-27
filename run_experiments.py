@@ -17,15 +17,14 @@ doe_factors = {
 
 # Fixed configurations that do not vary in the DOE (optional)
 fixed_config = {
-    "num-server-rounds": 3,  # Example: fix at 10 rounds for all
+    "num-server-rounds": 100,  # Example: fix at 10 rounds for all
     "local-epochs": 1,    # Example: fix at 1 and 5 local epochs
     "penalty": "l2"
 }
 
 # List of Seeds to replicate the experiment (e.g., 3 runs per combination)
 # If you want only one deterministic run, leave only [42]
-#seeds = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
-seeds = [1954324947]
+seeds = [428956419, 1954324947, 1145661099, 1835732737, 794161987, 1329531353, 200496737, 633816299, 1410143363, 1282538739]
 
 # ==========================================
 # 2. Generate Combinations
