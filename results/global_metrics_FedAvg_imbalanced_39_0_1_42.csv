@@ -1,5 +1,0 @@
-round,global_accuracy,global_logloss,global_precision_bin,global_recall_bin,global_f1_bin,global_precision_macro,global_recall_macro,global_f1_macro,global_tn,global_fp,global_fn,global_tp,global_sensitivity,global_specificity,global_balanced_accuracy,global_roc_auc,global_pr_auc,num-examples,fl_algo,dataset_balance_type,fraction,failure_rate,iid,seed
-0,0.0339,0.6931471805599454,0.0339,1.0,0.0655769416771448,0.01695,0.5,0.0327884708385724,0,9661,0,339,1.0,0.0,0.5,0.5,0.0339,10000,FedAvg,imbalanced,0.39,0,1,42
-1,0.9661,0.13844134588218093,0.0,0.0,0.0,0.48305,0.5,0.49137887187833784,9661,0,339,0,0.0,1.0,0.5,0.8005483226511482,0.3917458949696795,10000,FedAvg,imbalanced,0.39,0,1,42
-2,0.9661,0.12770078738051727,0.0,0.0,0.0,0.48305,0.5,0.49137887187833784,9661,0,339,0,0.0,1.0,0.5,0.8023259896936838,0.40534369005418003,10000,FedAvg,imbalanced,0.39,0,1,42
-3,0.9661,0.12320309452229,0.0,0.0,0.0,0.48305,0.5,0.49137887187833784,9661,0,339,0,0.0,1.0,0.5,0.801492422014858,0.40401457968954096,10000,FedAvg,imbalanced,0.39,0,1,42

@@ -43,7 +43,8 @@ def train(msg: Message, context: Context):
 
     # 1) Build model using current run_config
     penalty = context.run_config["penalty"]
-    model = create_log_reg_and_instantiate_parameters(penalty, seed=local_seed)
+    local_epochs = context.run_config["local-epochs"]
+    model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=local_seed)
 
     # 2) Apply global parameters received from the server
     ndarrays = msg.content["arrays"].to_numpy_ndarrays()
@@ -106,8 +107,8 @@ def evaluate(msg: Message, context: Context):
 
     # Create LogisticRegression Model
     penalty = context.run_config["penalty"]
-    # Create LogisticRegression Model
-    model = create_log_reg_and_instantiate_parameters(penalty, seed=local_seed)
+    local_epochs = context.run_config["local-epochs"]
+    model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=local_seed)
 
     # Apply received pararameters
     ndarrays = msg.content["arrays"].to_numpy_ndarrays()

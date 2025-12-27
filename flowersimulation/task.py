@@ -322,7 +322,8 @@ def binary_classification_metrics(
 # server side evaluation function
 def global_evaluate(server_round: int, arrays: ArrayRecord, dataset_name: str, seed=42) -> MetricRecord:
     penalty = "l2"
-    model = create_log_reg_and_instantiate_parameters(penalty, seed=seed)
+    local_epochs = 1
+    model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=seed)
 
     ndarrays = arrays.to_numpy_ndarrays()
     set_model_params(model, ndarrays)

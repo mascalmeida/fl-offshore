@@ -57,7 +57,8 @@ def main(grid: Grid, context: Context) -> None:
     
     # Create LogisticRegression Model. If AI4I data present, use its dims. 
     penalty = context.run_config["penalty"]
-    model = create_log_reg_and_instantiate_parameters(penalty, seed=seed)
+    local_epochs = context.run_config["local-epochs"]
+    model = create_log_reg_and_instantiate_parameters(penalty, max_iter_per_round=local_epochs, seed=seed)
     # Construct ArrayRecord representation
     arrays = ArrayRecord(get_model_params(model))
 
