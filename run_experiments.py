@@ -50,53 +50,69 @@ def format_arg(key, value):
 
 current_run = 1
 
+# --- CONFIGURAÇÃO DE RETOMADA ---
+START_FROM_RUN = 319  # Ajustado para o crash
+# --------------------------------
+
+print(f"--> Iniciando script.")
+print(f"--> Regra 1: Pular execuções anteriores a {START_FROM_RUN}")
+print(f"--> Regra 2: Pular TODAS configurações com fraction = 0.39")
+
 for seed in seeds:
     for config in combinations:
+        
+        # --- LÓGICA DE PULO (SKIP) ---
+        
+        # 1. Pular rodadas passadas
+        if current_run < START_FROM_RUN:
+            current_run += 1
+            continue 
+
+        # 2. Pular configurações com fraction == 0.39 (Nova regra)
+        if config['fraction'] == 0.39:
+            # Descomente a linha abaixo se quiser ver no log o que está sendo pulado
+            print(f"Skipping run {current_run} (Fraction 0.39 ignored)...") 
+            current_run += 1
+            continue
+
+        # -----------------------------
+
         print(f"\n=============================================")
         print(f"Running {current_run}/{total_runs} | Seed: {seed}")
         print(f"Config: {config}")
         print(f"=============================================")
 
-        # Assembles the argument string for --run-config
-        # Format: key=value key2=value2
+        # Monta a string de argumentos
         config_args = []
-        
-        # Adds DOE factors
         for k, v in config.items():
             config_args.append(format_arg(k, v))
-        
-        # Adds fixed configs
         for k, v in fixed_config.items():
             config_args.append(format_arg(k, v))
-
-        # Adds the current seed
         config_args.append(f"seed={seed}")
 
-        # Joins everything into a string
         run_config_str = " ".join(config_args)
 
-        # Final command: flwr run . --run-config "..."
-        # Note: dataset-name and other string values must be handled carefully in the shell,
-        # but Flower usually handles simple strings well.
         cmd = [
             "flwr", "run", ".", 
             "--run-config", run_config_str
         ]
 
         try:
-            # Executes the command and waits for it to finish
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error executing run {current_run}: {e}")
-            # Decide if you want 'break' or 'continue'
-            # continue 
+            print(f"Erro na execução da run {current_run}: {e}")
+            # Se quiser que ele continue tentando as próximas mesmo com erro, descomente abaixo:
+            # time.sleep(10) 
+            # current_run += 1
+            # continue
         except KeyboardInterrupt:
-            print("Execution interrupted by user.")
+            print("Execução interrompida pelo usuário.")
             sys.exit()
 
         current_run += 1
         
-        # Optional: Short pause to clear OS resources if necessary
-        time.sleep(2)
+        # Aumentei o tempo de descanso para evitar o erro do Ray no Windows
+        print("Resfriando processos (5s)...")
+        time.sleep(5) 
 
 print("\nDesign of Experiments successfully completed!")
